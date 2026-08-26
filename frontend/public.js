@@ -1,5 +1,5 @@
-const API_URL = "http://localhost:8080/api";
-const BACKEND_URL = "http://localhost:8080";
+const API_URL = "https://mahesh-portfolio-no22.onrender.com/api";
+const BACKEND_URL = "https://mahesh-portfolio-no22.onrender.com";
 
 
 // ==========================================
