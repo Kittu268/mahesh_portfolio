@@ -124,13 +124,45 @@ Database database(databasePath);
     );
 
 
-    // ==========================================
-    // HEALTH CHECK
-    // ==========================================
-
-    // ==========================================
+   // ==========================================
 // ROOT ROUTE
 // ==========================================
+
+server.Get(
+    "/",
+    [](const httplib::Request&,
+       httplib::Response& response)
+    {
+        response.set_content(
+            R"({
+                "status":"success",
+                "message":"Mahesh Bainoor Portfolio Backend is running",
+                "service":"C++ + SQLite API"
+            })",
+            "application/json"
+        );
+    }
+);
+
+
+// ==========================================
+// HEALTH CHECK
+// ==========================================
+
+server.Get(
+    "/api/health",
+    [](const httplib::Request&,
+       httplib::Response& response)
+    {
+        response.set_content(
+            R"({
+                "status":"success",
+                "message":"C++ backend is running"
+            })",
+            "application/json"
+        );
+    }
+);
 
 server.Get(
     "/",
