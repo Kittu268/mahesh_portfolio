@@ -1,4 +1,4 @@
-const API_URL = "https://mahesh-portfolio-no22.onrender.com/api";
+https://mahesh-portfolio-no22.onrender.com
 
 
 // ==========================================
@@ -561,54 +561,43 @@ async function loadProjects() {
 // ADD PROJECT
 // ==========================================
 
+// ==========================================
+// ADD PROJECT
+// ==========================================
+
 async function addProject(event) {
 
     event.preventDefault();
-
 
     // ======================================
     // GET FORM VALUES
     // ======================================
 
     const name =
-        document.getElementById(
-            "project-name"
-        ).value.trim();
-
+        document.getElementById("project-name")
+            .value
+            .trim();
 
     const description =
-        document.getElementById(
-            "project-description"
-        ).value.trim();
-
+        document.getElementById("project-description")
+            .value
+            .trim();
 
     const github =
-        document.getElementById(
-            "project-github"
-        ).value.trim();
-
+        document.getElementById("project-github")
+            .value
+            .trim();
 
     const technologiesInput =
-        document.getElementById(
-            "project-technologies"
-        );
-
+        document.getElementById("project-technologies");
 
     const technologies =
         technologiesInput
             ? technologiesInput.value.trim()
             : "";
 
-
-    // ======================================
-    // GET PROJECT IMAGE
-    // ======================================
-
     const imageInput =
-        document.getElementById(
-            "project-image"
-        );
-
+        document.getElementById("project-image");
 
     const imageFile =
         imageInput &&
@@ -616,15 +605,8 @@ async function addProject(event) {
             ? imageInput.files[0]
             : null;
 
-
     const status =
-        document.getElementById(
-            "project-status"
-        );
-
-
-    status.textContent =
-        "Adding project...";
+        document.getElementById("project-status");
 
 
     // ======================================
@@ -661,7 +643,6 @@ async function addProject(event) {
             "image/webp"
         ];
 
-
         if (
             !allowedTypes.includes(
                 imageFile.type
@@ -675,11 +656,8 @@ async function addProject(event) {
         }
 
 
-        // Maximum 5 MB
-
         const MAX_IMAGE_SIZE =
             5 * 1024 * 1024;
-
 
         if (
             imageFile.size >
@@ -694,73 +672,140 @@ async function addProject(event) {
     }
 
 
-    // ======================================
-    // CREATE MULTIPART FORM DATA
-    // ======================================
-
-    const formData =
-        new FormData();
-
-
-    formData.append(
-        "name",
-        name
-    );
-
-
-    formData.append(
-        "description",
-        description
-    );
-
-
-    formData.append(
-        "github_url",
-        github
-    );
-
-
-    formData.append(
-        "technologies",
-        technologies
-    );
-
-
-    // ======================================
-    // ADD IMAGE
-    // ======================================
-
-    if (imageFile) {
-
-        formData.append(
-            "image",
-            imageFile
-        );
-    }
-
-
-    // ======================================
-    // SEND REQUEST
-    // ======================================
-
     try {
+
+        // ======================================
+        // STEP 1
+        // UPLOAD IMAGE TO CLOUDINARY
+        // ======================================
+
+        let imageUrl = "";
+
+
+        if (imageFile) {
+
+            status.textContent =
+                "Uploading image to Cloudinary...";
+
+
+            const cloudinaryForm =
+                new FormData();
+
+
+            cloudinaryForm.append(
+                "file",
+                imageFile
+            );
+
+
+            cloudinaryForm.append(
+                "upload_preset",
+                "mahesh_portfolio"
+            );
+
+
+            const cloudinaryResponse =
+                await fetch(
+                    "https://api.cloudinary.com/v1_1/duaaytnsl/image/upload",
+                    {
+                        method: "POST",
+                        body: cloudinaryForm
+                    }
+                );
+
+
+            const cloudinaryData =
+                await cloudinaryResponse.json();
+
+
+            if (!cloudinaryResponse.ok) {
+
+                console.error(
+                    "Cloudinary error:",
+                    cloudinaryData
+                );
+
+                throw new Error(
+                    cloudinaryData.error?.message ||
+                    "Cloudinary image upload failed."
+                );
+            }
+
+
+            imageUrl =
+                cloudinaryData.secure_url ||
+                cloudinaryData.url ||
+                "";
+
+
+            if (!imageUrl) {
+
+                throw new Error(
+                    "Cloudinary did not return an image URL."
+                );
+            }
+        }
+
+
+        // ======================================
+        // STEP 2
+        // SEND PROJECT TO C++ BACKEND
+        // ======================================
+
+        status.textContent =
+            "Saving project...";
+
+
+        const body =
+            new URLSearchParams();
+
+
+        body.append(
+            "name",
+            name
+        );
+
+
+        body.append(
+            "description",
+            description
+        );
+
+
+        body.append(
+            "github_url",
+            github
+        );
+
+
+        body.append(
+            "technologies",
+            technologies
+        );
+
+
+        // IMPORTANT:
+        // C++ backend expects image_url
+
+        body.append(
+            "image_url",
+            imageUrl
+        );
+
 
         const response =
             await fetch(
                 `${API_URL}/projects`,
                 {
-
                     method: "POST",
 
-                    headers:
-                        authHeaders(),
+                    headers: {
+                        ...authHeaders(),
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
 
-                    // IMPORTANT:
-                    // Do NOT set Content-Type manually.
-                    // Browser creates multipart boundary.
-
-                    body: formData
-
+                    body: body
                 }
             );
 
@@ -783,21 +828,6 @@ async function addProject(event) {
                 "Session expired. Please login again.";
 
             logout();
-
-            return;
-        }
-
-
-        // ======================================
-        // PAYLOAD TOO LARGE
-        // ======================================
-
-        if (
-            response.status === 413
-        ) {
-
-            status.textContent =
-                "Project image is too large for the server.";
 
             return;
         }
@@ -847,7 +877,7 @@ async function addProject(event) {
 
         status.textContent =
             error.message ||
-            "Unable to connect to backend.";
+            "Unable to add project.";
     }
 }
 
