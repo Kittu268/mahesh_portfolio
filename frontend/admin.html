@@ -28,80 +28,101 @@
 
 
     <!-- =====================================================
-         LOGIN SECTION
-         ===================================================== -->
+     LOGIN SECTION
+     ===================================================== -->
 
-    <section
-        id="login-section"
-        class="admin-login-section">
+<section
+    id="login-section"
+    class="admin-login-section">
 
-        <div class="admin-login-card">
+    <div class="admin-login-card">
 
-            <h1>
-                Mahesh Bainoor
-            </h1>
+        <h1>
+            Mahesh Bainoor
+        </h1>
 
-            <h2>
-                Portfolio Admin Login
-            </h2>
-
-
-            <form
-                id="login-form"
-                onsubmit="login(event)">
+        <h2>
+            Portfolio Admin Login
+        </h2>
 
 
-                <div class="form-group">
-
-                    <label for="username">
-                        Username
-                    </label>
-
-                    <input
-                        id="username"
-                        type="text"
-                        placeholder="Enter username"
-                        autocomplete="username"
-                        required>
-
-                </div>
+        <form
+            id="login-form"
+            onsubmit="login(event)">
 
 
-                <div class="form-group">
+            <!-- USERNAME -->
 
-                    <label for="password">
-                        Password
-                    </label>
+            <div class="form-group">
 
-                    <input
-                        id="password"
-                        type="password"
-                        placeholder="Enter password"
-                        autocomplete="current-password"
-                        required>
+                <label for="username">
+                    Username
+                </label>
 
-                </div>
+                <input
+                    id="username"
+                    type="text"
+                    placeholder="Enter username"
+                    autocomplete="username"
+                    required>
 
-
-                <button
-                    type="submit"
-                    class="primary-btn">
-
-                    Login
-
-                </button>
+            </div>
 
 
-                <p
-                    id="login-status"
-                    class="form-status">
-                </p>
+            <!-- PASSWORD -->
 
-            </form>
+            <div class="form-group">
 
-        </div>
+                <label for="password">
+                    Password
+                </label>
 
-    </section>
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    required>
+
+            </div>
+
+
+            <!-- LOGIN BUTTON -->
+
+            <button
+                type="submit"
+                class="primary-btn">
+
+                Login
+
+            </button>
+
+
+            <!-- FORGOT PASSWORD -->
+
+            <button
+                type="button"
+                class="forgot-password-btn"
+                onclick="forgotPassword()">
+
+                Forgot Password?
+
+            </button>
+
+
+            <!-- LOGIN STATUS -->
+
+            <p
+                id="login-status"
+                class="form-status">
+            </p>
+
+
+        </form>
+
+    </div>
+
+</section>
 
 
 
