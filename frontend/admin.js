@@ -1,13 +1,17 @@
-// ==========================================
+/// ==========================================
 // API CONFIGURATION
 // ==========================================
 
 const API_URL =
     "https://mahesh-portfolio-no22.onrender.com/api";
 
+
+// ==========================================
+// AUTHENTICATION
+// ==========================================
+
 let authToken =
     localStorage.getItem("portfolio_admin_token");
-
 
 // ==========================================
 // PAGE LOAD
@@ -291,16 +295,15 @@ async function login(event) {
 function forgotPassword() {
 
     const status =
-        document.getElementById(
-            "login-status"
-        );
+        document.getElementById("login-status");
 
+    if (status) {
 
-    status.textContent =
-        "Password reset is not configured yet. Please contact the portfolio administrator.";
+        status.textContent =
+            "Forgot password? Please contact the portfolio administrator to reset the admin password.";
 
+    }
 }
-
 
 // ==========================================
 // SHOW LOGIN
