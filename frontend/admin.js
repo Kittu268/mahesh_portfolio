@@ -1,4 +1,18 @@
-﻿const API_URL = "https://mahesh-portfolio-no22.onrender.com/api";
+﻿function getBackendBaseUrl() {
+    const hostname = window.location.hostname;
+
+    if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === ""
+    ) {
+        return "http://localhost:8080";
+    }
+
+    return "https://mahesh-portfolio-no22.onrender.com";
+}
+
+const API_URL = `${getBackendBaseUrl()}/api`;
 let authToken = localStorage.getItem("portfolio_admin_token") || null;
 
 function escapeHtml(value) {
