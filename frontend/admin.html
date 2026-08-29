@@ -14,7 +14,7 @@
             <h1>Mahesh Bainoor</h1>
             <h2>Portfolio Admin Login</h2>
 
-            <form id="login-form" onsubmit="login(event)">
+            <form id="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input id="username" type="text" placeholder="Enter username" autocomplete="username" required>
@@ -26,7 +26,7 @@
                 </div>
 
                 <button type="submit" class="primary-btn">Login</button>
-                <button type="button" class="forgot-password-btn" onclick="forgotPassword()">Forgot Password?</button>
+                <button type="button" class="forgot-password-btn">Forgot Password?</button>
                 <p id="login-status" class="form-status"></p>
             </form>
         </div>
@@ -55,7 +55,7 @@
                 <div class="admin-card">
                     <h3>Add Project</h3>
 
-                    <form id="project-form" onsubmit="addProject(event)">
+                    <form id="project-form">
                         <div class="form-group">
                             <label for="project-name">Project Name</label>
                             <input id="project-name" type="text" placeholder="Enter project name" autocomplete="off" required>
@@ -101,7 +101,7 @@
                 <div class="admin-card">
                     <h3>Upload Certificate</h3>
 
-                    <form id="certificate-form" onsubmit="uploadCertificate(event)">
+                    <form id="certificate-form">
                         <div class="form-group">
                             <label for="certificate-name">Certificate Name</label>
                             <input id="certificate-name" type="text" placeholder="Enter certificate name" required>

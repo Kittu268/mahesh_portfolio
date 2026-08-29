@@ -30,15 +30,32 @@ function getAuthHeaders() {
 function showLogin() {
     const loginSection = document.getElementById("login-section");
     const dashboardSection = document.getElementById("dashboard-section");
-    if (loginSection) loginSection.hidden = false;
-    if (dashboardSection) dashboardSection.hidden = true;
+
+    if (loginSection) {
+        loginSection.hidden = false;
+        loginSection.style.display = "flex";
+    }
+
+    if (dashboardSection) {
+        dashboardSection.hidden = true;
+        dashboardSection.style.display = "none";
+    }
 }
 
 function showDashboard() {
     const loginSection = document.getElementById("login-section");
     const dashboardSection = document.getElementById("dashboard-section");
-    if (loginSection) loginSection.hidden = true;
-    if (dashboardSection) dashboardSection.hidden = false;
+
+    if (loginSection) {
+        loginSection.hidden = true;
+        loginSection.style.display = "none";
+    }
+
+    if (dashboardSection) {
+        dashboardSection.hidden = false;
+        dashboardSection.style.display = "block";
+    }
+
     loadProjects();
     loadCertificates();
 }
@@ -127,6 +144,11 @@ async function loadProjects() {
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
+            if (response.status === 401) {
+                container.innerHTML = "<p class=\"empty-message\">Your session may have expired. Please log in again if needed.</p>";
+                return;
+            }
+
             container.innerHTML = `<p class="empty-message">Unable to load projects. HTTP ${response.status}</p>`;
             return;
         }
@@ -301,6 +323,11 @@ async function loadCertificates() {
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
+            if (response.status === 401) {
+                container.innerHTML = "<p class=\"empty-message\">Your session may have expired. Please log in again if needed.</p>";
+                return;
+            }
+
             container.innerHTML = `<p class="empty-message">Unable to load certificates. HTTP ${response.status}</p>`;
             return;
         }
