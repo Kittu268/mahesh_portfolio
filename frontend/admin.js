@@ -1,44 +1,26 @@
-/// ==========================================
-// API CONFIGURATION
-// ==========================================
+// ============================================================
+// MAHESH BAINOOR PORTFOLIO - ADMIN JAVASCRIPT
+// ============================================================
 
-const API_URL =
-    "https://mahesh-portfolio-no22.onrender.com/api";
+const API_URL = "https://mahesh-portfolio-no22.onrender.com/api";
+
+let authToken = localStorage.getItem("portfolio_admin_token") || null;
 
 
-// ==========================================
-// AUTHENTICATION
-// ==========================================
-
-let authToken =
-    localStorage.getItem("portfolio_admin_token");
-
-// ==========================================
-// PAGE LOAD
-// ==========================================
+// ============================================================
+// INITIALIZATION
+// ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const loginForm =
-        document.getElementById("login-form");
+    // Login form
+    const loginForm = document.getElementById("login-form");
 
     if (loginForm) {
-        loginForm.addEventListener(
-            "submit",
-            login
-        );
+        loginForm.addEventListener("submit", login);
     }
 
-    const logoutButton =
-        document.getElementById("logout-button");
-
-    if (logoutButton) {
-        logoutButton.addEventListener(
-            "click",
-            logout
-        );
-    }
-
+    // Forgot password button
     const forgotButton =
         document.getElementById("forgot-password");
 
@@ -49,21 +31,78 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
+    // Add project form
+    const projectForm =
+        document.getElementById("project-form");
 
-    // If token exists, show dashboard
+    if (projectForm) {
+        projectForm.addEventListener(
+            "submit",
+            addProject
+        );
+    }
+
+    // Certificate form
+    const certificateForm =
+        document.getElementById("certificate-form");
+
+    if (certificateForm) {
+        certificateForm.addEventListener(
+            "submit",
+            uploadCertificate
+        );
+    }
+
+    // Logout
+    const logoutButton =
+        document.getElementById("logout-button");
+
+    if (logoutButton) {
+        logoutButton.addEventListener(
+            "click",
+            logout
+        );
+    }
+
+    // Check existing login
     if (authToken) {
         showDashboard();
     }
-    else {
-        showLogin();
-    }
-
 });
 
 
-// ==========================================
+// ============================================================
+// READ JSON RESPONSE SAFELY
+// ============================================================
+
+async function readJsonResponse(response) {
+
+    const text = await response.text();
+
+    if (!text) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(text);
+    }
+    catch (error) {
+
+        console.error(
+            "Invalid JSON response:",
+            text
+        );
+
+        return {
+            message: text
+        };
+    }
+}
+
+
+// ============================================================
 // LOGIN
-// ==========================================
+// ============================================================
 
 async function login(event) {
 
@@ -83,16 +122,9 @@ async function login(event) {
             '#login-form button[type="submit"]'
         );
 
-
     if (!usernameElement || !passwordElement) {
-
-        console.error(
-            "Username or password field not found."
-        );
-
         return;
     }
-
 
     const username =
         usernameElement.value.trim();
@@ -100,45 +132,38 @@ async function login(event) {
     const password =
         passwordElement.value;
 
-
     if (!username || !password) {
 
-        status.textContent =
-            "Please enter username and password.";
+        if (status) {
+            status.textContent =
+                "Please enter username and password.";
+        }
 
         return;
     }
 
-
-    status.textContent =
-        "Logging in...";
-
+    if (status) {
+        status.textContent =
+            "Logging in...";
+    }
 
     if (loginButton) {
         loginButton.disabled = true;
     }
 
-
     try {
 
-        const body =
-            new URLSearchParams();
+        const body = new URLSearchParams();
 
-        body.append(
+        body.set(
             "username",
             username
         );
 
-        body.append(
+        body.set(
             "password",
             password
         );
-
-
-        console.log(
-            "Sending login request..."
-        );
-
 
         const response =
             await fetch(
@@ -155,112 +180,79 @@ async function login(event) {
                 }
             );
 
+        const data =
+            await readJsonResponse(response);
 
-        console.log(
-            "Login HTTP status:",
-            response.status
-        );
-
-
-        const responseText =
-            await response.text();
-
-
-        console.log(
-            "Login response:",
-            responseText
-        );
-
-
-        let data = {};
-
-        try {
-
-            data =
-                JSON.parse(responseText);
-
-        }
-        catch (jsonError) {
-
-            console.error(
-                "Invalid JSON response:",
-                jsonError
-            );
-
-            status.textContent =
-                "Server returned an invalid response.";
-
-            return;
-        }
-
-
-        // ======================================
+        // ------------------------------------------
         // WRONG USERNAME / PASSWORD
-        // ======================================
+        // ------------------------------------------
 
         if (response.status === 401) {
 
-            status.textContent =
-                "Wrong username or password. Please try again.";
+            if (status) {
+                status.textContent =
+                    "Wrong username or password. Please try again.";
+            }
 
             passwordElement.value = "";
 
             return;
         }
 
-
-        // ======================================
+        // ------------------------------------------
         // OTHER ERROR
-        // ======================================
+        // ------------------------------------------
 
         if (!response.ok) {
 
-            status.textContent =
-                data.message ||
-                `Login failed. HTTP ${response.status}`;
+            if (status) {
+                status.textContent =
+                    data.message ||
+                    `Login failed. HTTP ${response.status}`;
+            }
 
             return;
         }
 
+        // ------------------------------------------
+        // TOKEN MISSING
+        // ------------------------------------------
 
-        // ======================================
-        // SUCCESS
-        // ======================================
+        if (!data.token) {
 
-        if (
-            data.status !== "success" ||
-            !data.token
-        ) {
-
-            status.textContent =
-                data.message ||
-                "Login failed.";
+            if (status) {
+                status.textContent =
+                    "Login failed: authentication token was not received.";
+            }
 
             return;
         }
 
+        // ------------------------------------------
+        // SAVE TOKEN
+        // ------------------------------------------
 
-        // Save token
-        authToken =
-            data.token;
+        authToken = data.token;
 
         localStorage.setItem(
             "portfolio_admin_token",
             authToken
         );
 
+        if (status) {
+            status.textContent =
+                "Login successful.";
+        }
 
-        status.textContent =
-            "Login successful!";
+        // Clear login form
+        const form =
+            document.getElementById("login-form");
 
+        if (form) {
+            form.reset();
+        }
 
-        // Clear form
-        document
-            .getElementById("login-form")
-            .reset();
-
-
-        // Show dashboard
+        // Open dashboard
         showDashboard();
 
     }
@@ -271,110 +263,42 @@ async function login(event) {
             error
         );
 
-
-        status.textContent =
-            "Unable to connect to the backend. Please try again.";
+        if (status) {
+            status.textContent =
+                "Unable to connect to the backend. Please try again.";
+        }
     }
-
-
     finally {
 
         if (loginButton) {
             loginButton.disabled = false;
         }
-
     }
-
 }
 
 
-// ==========================================
+// ============================================================
 // FORGOT PASSWORD
-// ==========================================
+// ============================================================
 
 function forgotPassword() {
 
     const status =
         document.getElementById("login-status");
 
-    if (status) {
-
-        status.textContent =
-            "Forgot password? Please contact the portfolio administrator to reset the admin password.";
-
-    }
-}
-
-// ==========================================
-// SHOW LOGIN
-// ==========================================
-
-function showLogin() {
-
-    const loginSection =
-        document.getElementById(
-            "login-section"
-        );
-
-    const dashboardSection =
-        document.getElementById(
-            "dashboard-section"
-        );
-
-
-    if (loginSection) {
-        loginSection.style.display =
-            "block";
+    if (!status) {
+        return;
     }
 
-
-    if (dashboardSection) {
-        dashboardSection.style.display =
-            "none";
-    }
+    status.textContent =
+        "Forgot password? Password reset is not configured yet. Please contact the portfolio administrator.";
 
 }
 
 
-// ==========================================
-// SHOW DASHBOARD
-// ==========================================
-
-function showDashboard() {
-
-    const loginSection =
-        document.getElementById(
-            "login-section"
-        );
-
-    const dashboardSection =
-        document.getElementById(
-            "dashboard-section"
-        );
-
-
-    if (loginSection) {
-        loginSection.style.display =
-            "none";
-    }
-
-
-    if (dashboardSection) {
-        dashboardSection.style.display =
-            "block";
-    }
-
-
-    console.log(
-        "Admin dashboard opened."
-    );
-
-}
-
-
-// ==========================================
+// ============================================================
 // LOGOUT
-// ==========================================
+// ============================================================
 
 function logout() {
 
@@ -384,142 +308,85 @@ function logout() {
         "portfolio_admin_token"
     );
 
+    const dashboard =
+        document.getElementById("dashboard-section");
 
-    showLogin();
+    const loginSection =
+        document.getElementById("login-section");
 
-
-    const status =
-        document.getElementById(
-            "login-status"
-        );
-
-
-    if (status) {
-
-        status.textContent =
-            "Logged out successfully.";
-
+    if (dashboard) {
+        dashboard.style.display = "none";
     }
 
+    if (loginSection) {
+        loginSection.style.display = "block";
+    }
+
+    console.log("Logged out.");
 }
 
 
-// ==========================================
-// TEST BACKEND
-// ==========================================
+// ============================================================
+// SHOW DASHBOARD
+// ============================================================
 
-async function testBackend() {
+function showDashboard() {
 
-    try {
+    const loginSection =
+        document.getElementById("login-section");
 
-        const response =
-            await fetch(
-                `${API_URL}/health`
-            );
+    const dashboardSection =
+        document.getElementById("dashboard-section");
 
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "Backend health:",
-            data
-        );
-
-    }
-    catch (error) {
-
-        console.error(
-            "Backend connection failed:",
-            error
-        );
-
+    if (loginSection) {
+        loginSection.style.display = "none";
     }
 
+    if (dashboardSection) {
+        dashboardSection.style.display = "block";
+    }
+
+    loadProjects();
+    loadCertificates();
 }
 
-// ==========================================
-// AUTHORIZATION HEADER
-// ==========================================
 
-function authHeaders() {
+// ============================================================
+// AUTHENTICATION HEADERS
+// ============================================================
+
+function getAuthHeaders() {
+
+    if (!authToken) {
+        return {};
+    }
 
     return {
-
         "Authorization":
             `Bearer ${authToken}`
-
     };
 }
 
 
-// ==========================================
-// SAFE RESPONSE READER
-// ==========================================
-
-async function readJsonResponse(response) {
-
-    const text =
-        await response.text();
-
-
-    if (!text) {
-
-        return {
-
-            status: "error",
-
-            message:
-                `Server returned HTTP ${response.status}`
-
-        };
-    }
-
-
-    try {
-
-        return JSON.parse(text);
-
-    } catch (error) {
-
-        console.error(
-            "Invalid JSON response:",
-            text
-        );
-
-
-        return {
-
-            status: "error",
-
-            message:
-                `Server returned HTTP ${response.status}`
-
-        };
-    }
-}
-
-
-// ==========================================
+// ============================================================
 // LOAD PROJECTS
-// ==========================================
+// ============================================================
 
 async function loadProjects() {
 
     const container =
-        document.getElementById(
-            "admin-projects-list"
+        document.getElementById("projects-list");
+
+    if (!container) {
+        console.warn(
+            "projects-list element not found."
         );
 
-
-    if (!container)
         return;
-
+    }
 
     container.innerHTML =
         "<p>Loading projects...</p>";
-
 
     try {
 
@@ -528,474 +395,269 @@ async function loadProjects() {
                 `${API_URL}/projects`
             );
 
+        console.log(
+            "Projects HTTP status:",
+            response.status
+        );
 
         const data =
-            await readJsonResponse(
-                response
-            );
+            await readJsonResponse(response);
 
+        console.log(
+            "Projects response:",
+            data
+        );
 
         if (!response.ok) {
 
-            throw new Error(
-                data.message ||
-                `Unable to load projects (${response.status})`
-            );
-        }
-
-
-        const projects =
-            data;
-
-
-        container.innerHTML = "";
-
-
-        if (
-            !Array.isArray(projects) ||
-            projects.length === 0
-        ) {
-
             container.innerHTML =
-                "<p>No projects available.</p>";
+                `<p>Unable to load projects. HTTP ${response.status}</p>`;
 
             return;
         }
 
+        if (!Array.isArray(data)) {
 
-        projects.forEach(
-            project => {
+            container.innerHTML =
+                "<p>Invalid projects response from server.</p>";
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+            return;
+        }
 
+        // ------------------------------------------
+        // NO PROJECTS
+        // ------------------------------------------
 
-                card.className =
-                    "admin-item";
+        if (data.length === 0) {
 
+            container.innerHTML =
+                "<p>No projects added yet.</p>";
 
-                // ======================================
-                // TECHNOLOGIES
-                // ======================================
+            return;
+        }
 
-                let technologyHTML = "";
+        // ------------------------------------------
+        // DISPLAY PROJECTS
+        // ------------------------------------------
 
+        container.innerHTML = "";
 
-                if (
-                    project.technologies &&
-                    project.technologies.trim()
-                ) {
+        data.forEach(project => {
 
-                    const technologies =
-                        project.technologies
-                            .split(",")
-                            .map(
-                                technology =>
-                                    technology.trim()
-                            )
-                            .filter(
-                                technology =>
-                                    technology.length > 0
-                            );
+            const card =
+                document.createElement("div");
 
+            card.className =
+                "admin-project-card";
 
-                    technologyHTML = `
+            const image =
+                project.image_path ||
+                project.image_url ||
+                "";
 
-                        <div class="project-technologies">
+            card.innerHTML = `
+                <div class="admin-project-content">
 
-                            ${technologies
-                                .map(
-                                    technology => `
+                    ${
+                        image
+                            ? `
+                            <img
+                                src="${escapeHtml(image)}"
+                                alt="${escapeHtml(project.name || "Project")}"
+                                class="admin-project-image"
+                                onerror="this.style.display='none';"
+                            >
+                            `
+                            : ""
+                    }
 
-                                        <span class="technology-tag">
+                    <h3>
+                        ${escapeHtml(
+                            project.name || "Untitled Project"
+                        )}
+                    </h3>
 
-                                            ${escapeHtml(
-                                                technology
-                                            )}
+                    <p>
+                        ${escapeHtml(
+                            project.description || ""
+                        )}
+                    </p>
 
-                                        </span>
+                    <p>
+                        <strong>Technologies:</strong>
+                        ${escapeHtml(
+                            project.technologies || ""
+                        )}
+                    </p>
 
-                                    `
-                                )
-                                .join("")}
-
-                        </div>
-
-                    `;
-                }
-
-
-                // ======================================
-                // GITHUB
-                // ======================================
-
-                const githubHTML =
-                    project.github_url
-                        ? `
-
-                            <a
-                                href="${escapeAttribute(
-                                    project.github_url
-                                )}"
-                                target="_blank"
-                                rel="noopener noreferrer">
-
-                                GitHub
-
-                            </a>
-
-                        `
-                        : "";
-
-
-                // ======================================
-                // IMAGE
-                // ======================================
-
-                const imageHTML =
-                    project.image_path
-                        ? `
-
-                            <div class="project-image">
-
-                                <img
-                                    src="${escapeAttribute(
-                                        project.image_path
-                                    )}"
-                                    alt="${escapeAttribute(
-                                        project.name
-                                    )}">
-
-                            </div>
-
-                        `
-                        : "";
-
-
-                // ======================================
-                // CARD
-                // ======================================
-
-                card.innerHTML = `
-
-                    ${imageHTML}
-
-                    <div class="admin-project-content">
-
-                        <h3>
-                            ${escapeHtml(
-                                project.name
-                            )}
-                        </h3>
-
-                        <p>
-                            ${escapeHtml(
-                                project.description
-                            )}
-                        </p>
-
-                        ${technologyHTML}
-
-                        ${
-                            githubHTML
-                                ? `
-
-                                    <div class="project-links">
-
-                                        ${githubHTML}
-
-                                    </div>
-
-                                `
-                                : ""
-                        }
-
-                    </div>
-
+                    ${
+                        project.github_url
+                            ? `
+                            <p>
+                                <a
+                                    href="${escapeHtml(project.github_url)}"
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                    View GitHub
+                                </a>
+                            </p>
+                            `
+                            : ""
+                    }
 
                     <button
                         type="button"
-                        class="delete-btn"
-                        onclick="deleteProject(${project.id})">
-
+                        class="delete-project-btn"
+                        data-project-id="${project.id}">
                         Delete
-
                     </button>
 
-                `;
+                </div>
+            `;
 
-
-                container.appendChild(
-                    card
+            const deleteButton =
+                card.querySelector(
+                    ".delete-project-btn"
                 );
 
+            if (deleteButton) {
+
+                deleteButton.addEventListener(
+                    "click",
+                    () => deleteProject(project.id)
+                );
             }
-        );
 
+            container.appendChild(card);
+        });
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
-            "Project loading error:",
+            "Load projects error:",
             error
         );
 
-
-        container.innerHTML = `
-
-            <p class="error-message">
-
-                ${escapeHtml(
-                    error.message ||
-                    "Unable to load projects."
-                )}
-
-            </p>
-
-        `;
+        container.innerHTML =
+            "<p>Unable to connect to the backend.</p>";
     }
 }
 
 
-// ==========================================
+// ============================================================
 // ADD PROJECT
-// ==========================================
+// ============================================================
 
 async function addProject(event) {
 
     event.preventDefault();
 
+    if (!authToken) {
+
+        alert(
+            "Your login session has expired. Please login again."
+        );
+
+        logout();
+
+        return;
+    }
+
+    const form =
+        event.target;
 
     const name =
-        document.getElementById(
-            "project-name"
-        )
-        .value
-        .trim();
-
+        document.getElementById("project-name")?.value.trim() ||
+        document.getElementById("name")?.value.trim() ||
+        "";
 
     const description =
-        document.getElementById(
-            "project-description"
-        )
-        .value
-        .trim();
+        document.getElementById("project-description")?.value.trim() ||
+        document.getElementById("description")?.value.trim() ||
+        "";
 
-
-    const github =
-        document.getElementById(
-            "project-github"
-        )
-        .value
-        .trim();
-
-
-    const technologiesInput =
-        document.getElementById(
-            "project-technologies"
-        );
-
+    const githubUrl =
+        document.getElementById("github-url")?.value.trim() ||
+        document.getElementById("github_url")?.value.trim() ||
+        "";
 
     const technologies =
-        technologiesInput
-            ? technologiesInput.value.trim()
-            : "";
-
+        document.getElementById("technologies")?.value.trim() ||
+        "";
 
     const imageInput =
-        document.getElementById(
-            "project-image"
+        document.getElementById("project-image") ||
+        document.getElementById("image");
+
+    if (!name || !description) {
+
+        alert(
+            "Project name and description are required."
         );
-
-
-    const imageFile =
-        imageInput &&
-        imageInput.files.length > 0
-            ? imageInput.files[0]
-            : null;
-
-
-    const status =
-        document.getElementById(
-            "project-status"
-        );
-
-
-    if (!name) {
-
-        status.textContent =
-            "Project name is required.";
 
         return;
     }
 
+    const submitButton =
+        form.querySelector(
+            'button[type="submit"]'
+        );
 
-    if (!description) {
-
-        status.textContent =
-            "Project description is required.";
-
-        return;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent =
+            "Adding...";
     }
-
-
-    // ======================================
-    // IMAGE VALIDATION
-    // ======================================
-
-    if (imageFile) {
-
-        const allowedTypes = [
-
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-
-        ];
-
-
-        if (
-            !allowedTypes.includes(
-                imageFile.type
-            )
-        ) {
-
-            status.textContent =
-                "Only JPG, PNG and WEBP images are allowed.";
-
-            return;
-        }
-
-
-        const MAX_IMAGE_SIZE =
-            5 * 1024 * 1024;
-
-
-        if (
-            imageFile.size >
-            MAX_IMAGE_SIZE
-        ) {
-
-            status.textContent =
-                "Project image is too large. Maximum size is 5 MB.";
-
-            return;
-        }
-    }
-
 
     try {
 
-        // ======================================
-        // CLOUDINARY IMAGE
-        // ======================================
-
-        let imageUrl = "";
-
-
-        if (imageFile) {
-
-            status.textContent =
-                "Uploading image to Cloudinary...";
-
-
-            const cloudinaryForm =
-                new FormData();
-
-
-            cloudinaryForm.append(
-                "file",
-                imageFile
-            );
-
-
-            cloudinaryForm.append(
-                "upload_preset",
-                "mahesh_portfolio"
-            );
-
-
-            const cloudinaryResponse =
-                await fetch(
-                    "https://api.cloudinary.com/v1_1/duaaytnsl/image/upload",
-                    {
-                        method: "POST",
-                        body: cloudinaryForm
-                    }
-                );
-
-
-            const cloudinaryData =
-                await cloudinaryResponse.json();
-
-
-            if (!cloudinaryResponse.ok) {
-
-                throw new Error(
-                    cloudinaryData.error?.message ||
-                    "Cloudinary image upload failed."
-                );
-            }
-
-
-            imageUrl =
-                cloudinaryData.secure_url ||
-                cloudinaryData.url ||
-                "";
-
-
-            if (!imageUrl) {
-
-                throw new Error(
-                    "Cloudinary did not return an image URL."
-                );
-            }
-        }
-
-
-        // ======================================
-        // SAVE PROJECT
-        // ======================================
-
-        status.textContent =
-            "Saving project...";
-
+        /*
+         * URLSearchParams correctly encodes values.
+         * This is important for technologies such as C++.
+         */
 
         const body =
             new URLSearchParams();
 
-
-        body.append(
+        body.set(
             "name",
             name
         );
 
-
-        body.append(
+        body.set(
             "description",
             description
         );
 
-
-        body.append(
+        body.set(
             "github_url",
-            github
+            githubUrl
         );
 
-
-        body.append(
+        body.set(
             "technologies",
             technologies
         );
 
+        /*
+         * Your current backend returns image_path.
+         *
+         * If your backend accepts image_url,
+         * send it here.
+         */
 
-        body.append(
+        let imageUrl = "";
+
+        if (imageInput && imageInput.value) {
+            imageUrl =
+                imageInput.value.trim();
+        }
+
+        body.set(
             "image_url",
             imageUrl
         );
-
 
         const response =
             await fetch(
@@ -1004,165 +666,204 @@ async function addProject(event) {
                     method: "POST",
 
                     headers: {
-
-                        ...authHeaders(),
+                        ...getAuthHeaders(),
 
                         "Content-Type":
                             "application/x-www-form-urlencoded"
-
                     },
 
-                    body: body
+                    body:
+                        body.toString()
                 }
             );
 
+        console.log(
+            "Add project HTTP status:",
+            response.status
+        );
 
         const data =
-            await readJsonResponse(
-                response
-            );
+            await readJsonResponse(response);
 
+        console.log(
+            "Add project response:",
+            data
+        );
+
+        // ------------------------------------------
+        // TOKEN EXPIRED
+        // ------------------------------------------
 
         if (response.status === 401) {
 
-            status.textContent =
-                "Session expired. Please login again.";
+            alert(
+                "Your login session has expired. Please login again."
+            );
 
             logout();
 
             return;
         }
 
+        // ------------------------------------------
+        // ERROR
+        // ------------------------------------------
 
         if (!response.ok) {
 
-            status.textContent =
+            alert(
                 data.message ||
-                `Failed to add project. HTTP ${response.status}`;
+                `Failed to add project. HTTP ${response.status}`
+            );
 
             return;
         }
 
+        // ------------------------------------------
+        // SUCCESS
+        // ------------------------------------------
 
-        status.textContent =
-            "Project added successfully.";
+        alert(
+            "Project added successfully."
+        );
 
-
-        document.getElementById(
-            "project-form"
-        ).reset();
-
+        form.reset();
 
         await loadProjects();
 
-
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Add project error:",
             error
         );
 
+        alert(
+            "Unable to connect to the backend."
+        );
 
-        status.textContent =
-            error.message ||
-            "Unable to add project.";
+    }
+    finally {
+
+        if (submitButton) {
+
+            submitButton.disabled = false;
+
+            submitButton.textContent =
+                "Add Project";
+        }
     }
 }
 
 
-// ==========================================
+// ============================================================
 // DELETE PROJECT
-// ==========================================
+// ============================================================
 
 async function deleteProject(id) {
 
-    if (
-        !confirm(
-            "Delete this project?"
-        )
-    ) {
+    if (!authToken) {
+
+        alert(
+            "Please login again."
+        );
+
+        logout();
 
         return;
     }
 
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this project?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
 
         const response =
             await fetch(
-                `${API_URL}/projects/${id}`,
+                `${API_URL}/projects/${encodeURIComponent(id)}`,
                 {
                     method: "DELETE",
 
-                    headers:
-                        authHeaders()
+                    headers: {
+                        ...getAuthHeaders()
+                    }
                 }
             );
 
-
         const data =
-            await readJsonResponse(
-                response
-            );
+            await readJsonResponse(response);
 
+        console.log(
+            "Delete response:",
+            data
+        );
 
         if (response.status === 401) {
+
+            alert(
+                "Your login session has expired."
+            );
 
             logout();
 
             return;
         }
 
-
         if (!response.ok) {
 
             alert(
                 data.message ||
-                `Delete failed. HTTP ${response.status}`
+                `Failed to delete project. HTTP ${response.status}`
             );
 
             return;
         }
 
+        alert(
+            "Project deleted successfully."
+        );
 
-        await loadProjects();
+        loadProjects();
 
-
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Delete project error:",
             error
         );
 
-
         alert(
-            "Unable to connect to backend."
+            "Unable to connect to the backend."
         );
     }
 }
 
 
-// ==========================================
+// ============================================================
 // LOAD CERTIFICATES
-// ==========================================
+// ============================================================
 
 async function loadCertificates() {
 
     const container =
         document.getElementById(
-            "admin-certificates-list"
+            "certificates-list"
         );
 
-
-    if (!container)
+    if (!container) {
         return;
-
+    }
 
     container.innerHTML =
         "<p>Loading certificates...</p>";
-
 
     try {
 
@@ -1171,226 +872,172 @@ async function loadCertificates() {
                 `${API_URL}/certificates`
             );
 
-
         const data =
-            await readJsonResponse(
-                response
-            );
-
+            await readJsonResponse(response);
 
         if (!response.ok) {
 
-            throw new Error(
-                data.message ||
-                `Unable to load certificates (${response.status})`
-            );
-        }
-
-
-        const certificates =
-            data;
-
-
-        container.innerHTML = "";
-
-
-        if (
-            !Array.isArray(certificates) ||
-            certificates.length === 0
-        ) {
-
             container.innerHTML =
-                "<p>No certificates available.</p>";
+                `<p>Unable to load certificates. HTTP ${response.status}</p>`;
 
             return;
         }
 
+        if (!Array.isArray(data)) {
 
-        certificates.forEach(
-            certificate => {
+            container.innerHTML =
+                "<p>Invalid certificates response.</p>";
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+            return;
+        }
 
+        if (data.length === 0) {
 
-                card.className =
-                    "admin-item";
+            container.innerHTML =
+                "<p>No certificates uploaded yet.</p>";
 
+            return;
+        }
 
-                card.innerHTML = `
+        container.innerHTML = "";
 
-                    <div>
+        data.forEach(certificate => {
 
-                        <h3>
-                            ${escapeHtml(
-                                certificate.name
-                            )}
-                        </h3>
+            const card =
+                document.createElement("div");
 
-                        <p>
-                            Uploaded:
-                            ${formatDate(
-                                certificate.uploaded_at
-                            )}
-                        </p>
+            card.className =
+                "admin-certificate-card";
 
-                    </div>
+            const file =
+                certificate.file_path ||
+                certificate.pdf_path ||
+                certificate.url ||
+                "";
 
+            card.innerHTML = `
+                <h3>
+                    ${escapeHtml(
+                        certificate.name ||
+                        certificate.title ||
+                        "Certificate"
+                    )}
+                </h3>
 
-                    <div class="admin-actions">
+                ${
+                    file
+                        ? `
+                        <a
+                            href="${escapeHtml(file)}"
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            View Certificate
+                        </a>
+                        `
+                        : ""
+                }
+            `;
 
-                        <button
-                            type="button"
-                            class="view-btn"
-                            onclick="viewCertificate(${certificate.id})">
+            container.appendChild(card);
+        });
 
-                            View
-
-                        </button>
-
-
-                        <button
-                            type="button"
-                            class="delete-btn"
-                            onclick="deleteCertificate(${certificate.id})">
-
-                            Delete
-
-                        </button>
-
-                    </div>
-
-                `;
-
-
-                container.appendChild(
-                    card
-                );
-
-            }
-        );
-
-
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
-            "Certificate loading error:",
+            "Load certificates error:",
             error
         );
 
-
-        container.innerHTML = `
-
-            <p class="error-message">
-
-                ${escapeHtml(
-                    error.message ||
-                    "Unable to load certificates."
-                )}
-
-            </p>
-
-        `;
+        container.innerHTML =
+            "<p>Unable to connect to the backend.</p>";
     }
 }
 
 
-// ==========================================
+// ============================================================
 // UPLOAD CERTIFICATE
-// ==========================================
+// ============================================================
 
 async function uploadCertificate(event) {
 
     event.preventDefault();
 
+    if (!authToken) {
 
-    const name =
-        document.getElementById(
-            "certificate-name"
-        )
-        .value
-        .trim();
-
-
-    const file =
-        document.getElementById(
-            "certificate-file"
-        ).files[0];
-
-
-    const status =
-        document.getElementById(
-            "certificate-status"
+        alert(
+            "Please login again."
         );
 
+        logout();
+
+        return;
+    }
+
+    const form =
+        event.target;
+
+    const nameInput =
+        document.getElementById(
+            "certificate-name"
+        ) ||
+        document.getElementById(
+            "certificateName"
+        );
+
+    const fileInput =
+        document.getElementById(
+            "certificate-file"
+        ) ||
+        document.getElementById(
+            "certificate"
+        );
+
+    if (!nameInput || !fileInput) {
+
+        alert(
+            "Certificate fields were not found."
+        );
+
+        return;
+    }
+
+    const name =
+        nameInput.value.trim();
 
     if (!name) {
 
-        status.textContent =
-            "Certificate name is required.";
+        alert(
+            "Please enter certificate name."
+        );
 
         return;
     }
-
-
-    if (!file) {
-
-        status.textContent =
-            "Please select a PDF.";
-
-        return;
-    }
-
 
     if (
-        file.type !==
-        "application/pdf"
+        !fileInput.files ||
+        fileInput.files.length === 0
     ) {
 
-        status.textContent =
-            "Only PDF files are allowed.";
+        alert(
+            "Please select a certificate PDF."
+        );
 
         return;
     }
-
-
-    const MAX_FILE_SIZE =
-        10 * 1024 * 1024;
-
-
-    if (
-        file.size >
-        MAX_FILE_SIZE
-    ) {
-
-        status.textContent =
-            "PDF is too large. Maximum size is 10 MB.";
-
-        return;
-    }
-
 
     const formData =
         new FormData();
-
 
     formData.append(
         "name",
         name
     );
 
-
     formData.append(
         "certificate",
-        file
+        fileInput.files[0]
     );
-
-
-    status.textContent =
-        "Uploading...";
-
 
     try {
 
@@ -1400,241 +1047,77 @@ async function uploadCertificate(event) {
                 {
                     method: "POST",
 
-                    headers:
-                        authHeaders(),
+                    headers: {
+                        ...getAuthHeaders()
+                    },
 
                     body: formData
                 }
             );
 
-
         const data =
-            await readJsonResponse(
-                response
-            );
-
+            await readJsonResponse(response);
 
         if (response.status === 401) {
 
-            status.textContent =
-                "Session expired. Please login again.";
+            alert(
+                "Your login session has expired."
+            );
 
             logout();
 
             return;
         }
 
-
-        if (response.status === 413) {
-
-            status.textContent =
-                "File is too large for the server.";
-
-            return;
-        }
-
-
         if (!response.ok) {
 
-            status.textContent =
+            alert(
                 data.message ||
-                `Upload failed. HTTP ${response.status}`;
+                `Certificate upload failed. HTTP ${response.status}`
+            );
 
             return;
         }
 
+        alert(
+            "Certificate uploaded successfully."
+        );
 
-        status.textContent =
-            "Certificate uploaded successfully.";
+        form.reset();
 
+        loadCertificates();
 
-        document.getElementById(
-            "certificate-form"
-        ).reset();
-
-
-        await loadCertificates();
-
-
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Certificate upload error:",
             error
         );
 
-
-        status.textContent =
-            "Unable to connect to backend.";
-    }
-}
-
-
-// ==========================================
-// DELETE CERTIFICATE
-// ==========================================
-
-async function deleteCertificate(id) {
-
-    if (
-        !confirm(
-            "Delete this certificate?"
-        )
-    ) {
-
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/certificates/${id}`,
-                {
-                    method: "DELETE",
-
-                    headers:
-                        authHeaders()
-                }
-            );
-
-
-        const data =
-            await readJsonResponse(
-                response
-            );
-
-
-        if (response.status === 401) {
-
-            logout();
-
-            return;
-        }
-
-
-        if (!response.ok) {
-
-            alert(
-                data.message ||
-                `Delete failed. HTTP ${response.status}`
-            );
-
-            return;
-        }
-
-
-        await loadCertificates();
-
-
-    } catch (error) {
-
-        console.error(
-            "Delete certificate error:",
-            error
-        );
-
-
         alert(
-            "Unable to connect to backend."
+            "Unable to connect to the backend."
         );
     }
 }
 
 
-// ==========================================
-// VIEW CERTIFICATE
-// ==========================================
-
-function viewCertificate(id) {
-
-    window.open(
-        `${API_URL}/certificates/${id}/file`,
-        "_blank"
-    );
-}
-
-
-// ==========================================
-// SECURITY HELPERS
-// ==========================================
+// ============================================================
+// ESCAPE HTML
+// ============================================================
 
 function escapeHtml(value) {
 
-    const div =
-        document.createElement(
-            "div"
-        );
+    if (value === null ||
+        value === undefined) {
 
-
-    div.textContent =
-        value || "";
-
-
-    return div.innerHTML;
-}
-
-
-function escapeAttribute(value) {
-
-    return String(
-        value || ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        );
-}
-
-
-// ==========================================
-// DATE FORMAT
-// ==========================================
-
-function formatDate(dateString) {
-
-    if (!dateString)
         return "";
-
-
-    const date =
-        new Date(
-            dateString.replace(
-                " ",
-                "T"
-            )
-        );
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return dateString;
     }
 
-
-    return date.toLocaleDateString(
-        "en-IN",
-        {
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        }
-    );
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
