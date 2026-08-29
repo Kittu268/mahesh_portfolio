@@ -13,6 +13,31 @@ namespace fs = std::filesystem;
 // Generate unique filename
 // ==========================================
 
+static fs::path resolveUploadDirectory()
+{
+    fs::path current = fs::current_path();
+    fs::path candidates[] = {
+        current,
+        current / "backend",
+        current.parent_path(),
+        current.parent_path() / "backend"
+    };
+
+    for (const auto& candidate : candidates)
+    {
+        if (
+            fs::exists(candidate / "uploads") ||
+            fs::exists(candidate / "data") ||
+            fs::exists(candidate / "backend")
+        )
+        {
+            return candidate / "uploads";
+        }
+    }
+
+    return current / "uploads";
+}
+
 static std::string generateFileName(
     const std::string& originalName)
 {
@@ -255,9 +280,7 @@ void setupCertificateRoutes(
             // ----------------------------------
 
             fs::path uploadDirectory =
-                fs::absolute(
-                    fs::path("..") / "uploads"
-                );
+                resolveUploadDirectory();
 
             fs::create_directories(
                 uploadDirectory

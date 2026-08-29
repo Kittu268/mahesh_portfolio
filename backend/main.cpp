@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
+#include <filesystem>
 
 #include "httplib.h"
 
@@ -13,32 +14,52 @@
 #include "routes/auth_routes.h"
 
 
+namespace fs = std::filesystem;
+
+static fs::path resolveAppRoot()
+{
+    fs::path current = fs::current_path();
+    fs::path candidates[] = {
+        current,
+        current / "backend",
+        current.parent_path(),
+        current.parent_path() / "backend"
+    };
+
+    for (const auto& candidate : candidates)
+    {
+        if (
+            fs::exists(candidate / "data") ||
+            fs::exists(candidate / "uploads") ||
+            fs::exists(candidate / "backend")
+        )
+        {
+            return candidate;
+        }
+    }
+
+    return current;
+}
+
 int main()
 {
     // ==========================================
     // DATABASE
     // ==========================================
 
-    // Local and cloud-friendly relative path.
-    //
-    // The database will be created inside:
-    //
-    // backend/data/portfolio.db
-    //
-    // when running locally.
-    //
-    // In Docker:
-    // /app/data/portfolio.db
+    fs::path appRoot = resolveAppRoot();
+    fs::path databaseDirectory = appRoot / "data";
+    fs::create_directories(databaseDirectory);
 
-   const char* databaseEnvironment =
-    std::getenv("DATABASE_PATH");
+    const char* databaseEnvironment =
+        std::getenv("DATABASE_PATH");
 
-std::string databasePath =
-    databaseEnvironment != nullptr
-        ? databaseEnvironment
-        : "data/portfolio.db";
+    std::string databasePath =
+        databaseEnvironment != nullptr
+            ? databaseEnvironment
+            : (databaseDirectory / "portfolio.db").string();
 
-Database database(databasePath);
+    Database database(databasePath);
 
 
     if (!database.initialize())
@@ -231,10 +252,13 @@ server.Get(
         so it works locally and inside Docker.
     */
 
+    fs::path uploadDirectory = appRoot / "uploads";
+    fs::create_directories(uploadDirectory);
+
     if (
         !server.set_mount_point(
             "/uploads",
-            "uploads"
+            uploadDirectory.string()
         )
     )
     {

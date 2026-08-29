@@ -901,6 +901,19 @@ footer a:hover {
 }
 
 
+#login-section {
+    display: flex;
+}
+
+#dashboard-section {
+    display: none;
+}
+
+#login-section[hidden],
+#dashboard-section[hidden] {
+    display: none !important;
+}
+
 #login-form {
 
     display: flex;

@@ -1,5 +1,19 @@
-const API_URL = "http://localhost:8080/api";
-const BACKEND_URL = "http://localhost:8080";
+function getBackendBaseUrl() {
+    const hostname = window.location.hostname;
+
+    if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === ""
+    ) {
+        return "http://localhost:8080";
+    }
+
+    return "https://mahesh-portfolio-no22.onrender.com";
+}
+
+const API_URL = `${getBackendBaseUrl()}/api`;
+const BACKEND_URL = getBackendBaseUrl();
 
 
 // ==========================================
