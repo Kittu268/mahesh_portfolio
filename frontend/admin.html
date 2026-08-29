@@ -1,801 +1,125 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <meta
-        name="description"
-        content="Mahesh Bainoor - Portfolio Admin Dashboard">
-
-    <title>
-        Mahesh Bainoor | Admin Dashboard
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mahesh Bainoor - Portfolio Admin Dashboard">
+    <title>Mahesh Bainoor | Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body>
 
+    <section id="login-section" class="admin-login-section">
+        <div class="admin-login-card">
+            <h1>Mahesh Bainoor</h1>
+            <h2>Portfolio Admin Login</h2>
 
-    <!-- =====================================================
-     LOGIN SECTION
-     ===================================================== -->
+            <form id="login-form" onsubmit="login(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input id="username" type="text" placeholder="Enter username" autocomplete="username" required>
+                </div>
 
-<section
-    id="login-section"
-    class="admin-login-section">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" placeholder="Enter password" autocomplete="current-password" required>
+                </div>
 
-    <div class="admin-login-card">
+                <button type="submit" class="primary-btn">Login</button>
+                <button type="button" class="forgot-password-btn" onclick="forgotPassword()">Forgot Password?</button>
+                <p id="login-status" class="form-status"></p>
+            </form>
+        </div>
+    </section>
 
-        <h1>
-            Mahesh Bainoor
-        </h1>
-
-        <h2>
-            Portfolio Admin Login
-        </h2>
-
-
-        <form
-            id="login-form"
-            onsubmit="login(event)">
-
-
-            <!-- USERNAME -->
-
-            <div class="form-group">
-
-                <label for="username">
-                    Username
-                </label>
-
-                <input
-                    id="username"
-                    type="text"
-                    placeholder="Enter username"
-                    autocomplete="username"
-                    required>
-
-            </div>
-
-
-            <!-- PASSWORD -->
-
-            <div class="form-group">
-
-                <label for="password">
-                    Password
-                </label>
-
-                <input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password"
-                    autocomplete="current-password"
-                    required>
-
-            </div>
-
-
-            <!-- LOGIN BUTTON -->
-
-            <button
-                type="submit"
-                class="primary-btn">
-
-                Login
-
-            </button>
-
-
-            <!-- FORGOT PASSWORD -->
-
-            <button
-                type="button"
-                class="forgot-password-btn"
-                onclick="forgotPassword()">
-
-                Forgot Password?
-
-            </button>
-
-
-            <!-- LOGIN STATUS -->
-
-            <p
-                id="login-status"
-                class="form-status">
-            </p>
-
-
-        </form>
-
-    </div>
-
-</section>
-
-
-
-    <!-- =====================================================
-         DASHBOARD SECTION
-         ===================================================== -->
-
-    <section
-    id="dashboard-section"
-    hidden>
-
-
-        <!-- =================================================
-             ADMIN NAVBAR
-             ================================================= -->
-
+    <section id="dashboard-section" hidden>
         <nav class="navbar">
-
-            <div class="logo">
-                Mahesh Bainoor
-            </div>
-
-
-            <div class="admin-title">
-                Portfolio Admin Dashboard
-            </div>
-
-
+            <div class="logo">Mahesh Bainoor</div>
+            <div class="admin-title">Portfolio Admin Dashboard</div>
             <div class="admin-actions">
-
-                <a
-                    href="index.html"
-                    target="_blank"
-                    rel="noopener noreferrer">
-
-                    View Portfolio
-
-                </a>
-
-
-                <button
-                    id="logout-button"
-                    type="button"
-                    class="logout-btn"
-                    onclick="logout()">
-
-                    Logout
-
-                </button>
-
+                <a href="index.html" target="_blank" rel="noopener noreferrer">View Portfolio</a>
+                <button id="logout-button" type="button" class="logout-btn" onclick="logout()">Logout</button>
             </div>
-
         </nav>
 
-
-
-        <!-- =================================================
-             MAIN CONTENT
-             ================================================= -->
-
         <main class="admin-container">
-
-
-            <!-- =================================================
-                 PROJECTS
-                 ================================================= -->
-
             <section class="admin-section">
-
                 <div class="section-header">
-
-                    <h2>
-                        Projects
-                    </h2>
-
+                    <h2>Projects</h2>
                 </div>
 
-
-                <div
-                    id="admin-projects-list"
-                    class="admin-projects-list">
-
-                    <p class="empty-message">
-                        Loading projects...
-                    </p>
-
+                <div id="admin-projects-list" class="admin-projects-list">
+                    <p class="empty-message">Loading projects...</p>
                 </div>
-
-
-
-                <!-- ADD PROJECT -->
 
                 <div class="admin-card">
+                    <h3>Add Project</h3>
 
-                    <h3>
-                        Add Project
-                    </h3>
-
-
-                    <form
-                        id="project-form"
-                        onsubmit="addProject(event)">
-
-
-                        <!-- PROJECT NAME -->
-
+                    <form id="project-form" onsubmit="addProject(event)">
                         <div class="form-group">
-
-                            <label for="project-name">
-                                Project Name
-                            </label>
-
-                            <input
-                                id="project-name"
-                                type="text"
-                                placeholder="Enter project name"
-                                autocomplete="off"
-                                required>
-
+                            <label for="project-name">Project Name</label>
+                            <input id="project-name" type="text" placeholder="Enter project name" autocomplete="off" required>
                         </div>
 
-
-                        <!-- DESCRIPTION -->
-
                         <div class="form-group">
-
-                            <label for="project-description">
-                                Description
-                            </label>
-
-                            <textarea
-                                id="project-description"
-                                rows="5"
-                                placeholder="Enter project description"
-                                required></textarea>
-
+                            <label for="project-description">Description</label>
+                            <textarea id="project-description" rows="5" placeholder="Enter project description" required></textarea>
                         </div>
 
-
-                        <!-- GITHUB -->
-
                         <div class="form-group">
-
-                            <label for="project-github">
-                                GitHub URL
-                            </label>
-
-                            <input
-                                id="project-github"
-                                type="url"
-                                placeholder="https://github.com/username/project">
-
+                            <label for="project-github">GitHub URL</label>
+                            <input id="project-github" type="url" placeholder="https://github.com/username/project">
                         </div>
 
-
-                        <!-- TECHNOLOGIES -->
+                        <div class="form-group">
+                            <label for="project-technologies">Technologies</label>
+                            <input id="project-technologies" type="text" placeholder="C++, Python, AI, SQLite, BirdNET">
+                            <small>Separate technologies with commas.</small>
+                        </div>
 
                         <div class="form-group">
-
-                            <label for="project-technologies">
-                                Technologies
-                            </label>
-
-                            <input
-                                id="project-technologies"
-                                type="text"
-                                placeholder="C++, Python, AI, SQLite, BirdNET">
-
-                            <small>
-                                Separate technologies with commas.
-                            </small>
-
+                            <label for="project-image">Project Image</label>
+                            <input id="project-image" type="file" accept="image/jpeg,image/png,image/webp">
+                            <small>JPG, PNG or WEBP. Recommended size: 1200 × 700.</small>
                         </div>
-                            <div class="form-group">
 
-    <label for="project-image">
-        Project Image
-    </label>
-
-    <input
-        id="project-image"
-        type="file"
-        accept="image/jpeg,image/png,image/webp">
-
-    <small>
-        JPG, PNG or WEBP. Recommended size: 1200 × 700.
-    </small>
-
-</div>
-
-                        <!-- ADD PROJECT -->
-
-                        <button
-                            type="submit"
-                            class="primary-btn">
-
-                            Add Project
-
-                        </button>
-
-
-                        <p
-                            id="project-status"
-                            class="form-status">
-                        </p>
-
+                        <button type="submit" class="primary-btn">Add Project</button>
+                        <p id="project-status" class="form-status"></p>
                     </form>
-
                 </div>
-
             </section>
-
-
-
-            <!-- =================================================
-                 CERTIFICATES
-                 ================================================= -->
 
             <section class="admin-section">
-
                 <div class="section-header">
-
-                    <h2>
-                        Certificates
-                    </h2>
-
+                    <h2>Certificates</h2>
                 </div>
 
-
-                <div
-                    id="admin-certificates-list"
-                    class="admin-certificates-list">
-
-                    <p class="empty-message">
-                        Loading certificates...
-                    </p>
-
+                <div id="admin-certificates-list" class="admin-certificates-list">
+                    <p class="empty-message">Loading certificates...</p>
                 </div>
-
-
-
-                <!-- UPLOAD CERTIFICATE -->
 
                 <div class="admin-card">
+                    <h3>Upload Certificate</h3>
 
-                    <h3>
-                        Upload Certificate
-                    </h3>
-
-
-                    <form
-                        id="certificate-form"
-                        onsubmit="uploadCertificate(event)">
-
-
+                    <form id="certificate-form" onsubmit="uploadCertificate(event)">
                         <div class="form-group">
-
-                            <label for="certificate-name">
-                                Certificate Name
-                            </label>
-
-                            <input
-                                id="certificate-name"
-                                type="text"
-                                placeholder="Enter certificate name"
-                                required>
-
+                            <label for="certificate-name">Certificate Name</label>
+                            <input id="certificate-name" type="text" placeholder="Enter certificate name" required>
                         </div>
 
-
                         <div class="form-group">
-
-                            <label for="certificate-file">
-                                Certificate PDF
-                            </label>
-
-                            <input
-                                id="certificate-file"
-                                type="file"
-                                accept=".pdf,application/pdf"
-                                required>
-
+                            <label for="certificate-file">Certificate PDF</label>
+                            <input id="certificate-file" type="file" accept=".pdf,application/pdf" required>
                         </div>
 
-
-                        <button
-                            type="submit"
-                            class="primary-btn">
-
-                            Upload Certificate
-
-                        </button>
-
-
-                        <p
-                            id="certificate-status"
-                            class="form-status">
-                        </p>
-
+                        <button type="submit" class="primary-btn">Upload Certificate</button>
+                        <p id="certificate-status" class="form-status"></p>
                     </form>
-
                 </div>
-
             </section>
+        </main>
+    </section>
 
-
-        <!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <meta
-        name="description"
-        content="Mahesh Bainoor - Portfolio Admin Dashboard">
-
-    <title>Mahesh Bainoor | Admin Dashboard</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css">
-
-</head>
-
-<body>
-
-
-<!-- =====================================================
-     LOGIN
-===================================================== -->
-
-<section
-    id="login-section"
-    class="admin-login-section">
-
-    <div class="admin-login-card">
-
-        <h1>Mahesh Bainoor</h1>
-
-        <h2>Portfolio Admin Login</h2>
-
-        <form id="login-form">
-
-            <div class="form-group">
-
-                <label for="username">
-                    Username
-                </label>
-
-                <input
-                    id="username"
-                    type="text"
-                    placeholder="Enter username"
-                    autocomplete="username"
-                    required>
-
-            </div>
-
-
-            <div class="form-group">
-
-                <label for="password">
-                    Password
-                </label>
-
-                <input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password"
-                    autocomplete="current-password"
-                    required>
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="primary-btn">
-
-                Login
-
-            </button>
-
-
-            <button
-                type="button"
-                id="forgot-password"
-                class="secondary-btn">
-
-                Forgot Password?
-
-            </button>
-
-
-            <p
-                id="login-status"
-                class="form-status">
-            </p>
-
-        </form>
-
-    </div>
-
-</section>
-
-
-<!-- =====================================================
-     DASHBOARD
-===================================================== -->
-
-<section
-    id="dashboard-section"
-    style="display:none;">
-
-    <header class="admin-header">
-
-        <div>
-
-            <h1>
-                Mahesh Bainoor
-            </h1>
-
-            <p>
-                Portfolio Admin Dashboard
-            </p>
-
-        </div>
-
-
-        <div>
-
-            <a
-                href="index.html"
-                target="_blank">
-
-                View Portfolio
-
-            </a>
-
-
-            <button
-                type="button"
-                id="logout-button">
-
-                Logout
-
-            </button>
-
-        </div>
-
-    </header>
-
-
-    <main class="admin-container">
-
-
-        <!-- =================================================
-             PROJECTS
-        ================================================== -->
-
-        <section>
-
-            <h2>
-                Projects
-            </h2>
-
-
-            <div
-                id="projects-list">
-
-                <p>
-                    Loading projects...
-                </p>
-
-            </div>
-
-
-            <h3>
-                Add Project
-            </h3>
-
-
-            <form
-                id="project-form">
-
-
-                <div class="form-group">
-
-                    <label for="project-name">
-                        Project Name
-                    </label>
-
-                    <input
-                        id="project-name"
-                        type="text"
-                        required>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="project-description">
-                        Description
-                    </label>
-
-                    <textarea
-                        id="project-description"
-                        required>
-                    </textarea>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="github-url">
-                        GitHub URL
-                    </label>
-
-                    <input
-                        id="github-url"
-                        type="url"
-                        placeholder="https://github.com/...">
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="technologies">
-                        Technologies
-                    </label>
-
-                    <input
-                        id="technologies"
-                        type="text"
-                        placeholder="C++, SQLite, HTML">
-
-                    <small>
-                        Separate technologies with commas.
-                    </small>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="project-image">
-                        Project Image URL
-                    </label>
-
-                    <input
-                        id="project-image"
-                        type="url"
-                        placeholder="https://...">
-
-                    <small>
-                        Use a Cloudinary image URL.
-                    </small>
-
-                </div>
-
-
-                <button
-                    type="submit"
-                    class="primary-btn">
-
-                    Add Project
-
-                </button>
-
-            </form>
-
-        </section>
-
-
-        <hr>
-
-
-        <!-- =================================================
-             CERTIFICATES
-        ================================================== -->
-
-        <section>
-
-            <h2>
-                Certificates
-            </h2>
-
-
-            <div
-                id="certificates-list">
-
-                <p>
-                    Loading certificates...
-                </p>
-
-            </div>
-
-
-            <h3>
-                Upload Certificate
-            </h3>
-
-
-            <form
-                id="certificate-form">
-
-
-                <div class="form-group">
-
-                    <label for="certificate-name">
-                        Certificate Name
-                    </label>
-
-                    <input
-                        id="certificate-name"
-                        type="text"
-                        required>
-
-                </div>
-
-
-                <div class="form-group">
-
-                    <label for="certificate-file">
-                        Certificate PDF
-                    </label>
-
-                    <input
-                        id="certificate-file"
-                        type="file"
-                        accept="application/pdf"
-                        required>
-
-                </div>
-
-
-                <button
-                    type="submit"
-                    class="primary-btn">
-
-                    Upload Certificate
-
-                </button>
-
-            </form>
-
-        </section>
-
-    </main>
-
-
-    <footer>
-
-        <p>
-            Copyright 2026 Mahesh Bainoor.
-            All rights reserved.
-        </p>
-
-    </footer>
-
-</section>
-
-
-<script src="admin.js"></script>
-
+    <script src="admin.js"></script>
 </body>
-
 </html>
