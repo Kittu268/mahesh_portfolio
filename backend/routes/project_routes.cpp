@@ -1,50 +1,22 @@
-#include "../auth/auth_manager.h"
 #include "project_routes.h"
+
+#include "../database/database.h"
+#include "../auth/auth_manager.h"
+
+#include "httplib.h"
 
 #include <sqlite3.h>
 
-#include <string>
-#include <fstream>
-#include <filesystem>
-#include <algorithm>
-#include <cctype>
-#include <ctime>
+#include <cstdlib>
 #include <iostream>
-
-namespace fs = std::filesystem;
-
-
-// ==========================================================
-// PROJECT UPLOAD DIRECTORY
-// ==========================================================
-//
-// IMPORTANT:
-//
-// The backend executable is being run from:
-//
-// C:\Portfolio\backend\build
-//
-// Therefore we use the absolute backend upload directory:
-//
-// C:\Portfolio\backend\uploads\projects
-//
-// The database will still store only:
-//
-// uploads/projects/project_xxxxx.jpg
-//
-// ==========================================================
-
-const fs::path PROJECT_UPLOAD_DIRECTORY =
-    fs::path("C:/Portfolio/backend/uploads/projects");
-
+#include <sstream>
+#include <string>
 
 // ==========================================================
-// JSON ESCAPE HELPER
+// JSON ESCAPE
 // ==========================================================
 
-std::string escapeJson(
-    const std::string& value
-)
+static std::string jsonEscape(const std::string& value)
 {
     std::string result;
 
@@ -52,7 +24,7 @@ std::string escapeJson(
     {
         switch (c)
         {
-            case '\"':
+            case '"':
                 result += "\\\"";
                 break;
 
@@ -83,81 +55,7 @@ std::string escapeJson(
 
 
 // ==========================================================
-// AUTHENTICATION
-// ==========================================================
-
-bool checkProjectAuthentication(
-    const httplib::Request& request,
-    httplib::Response& response
-)
-{
-    const std::string authHeader =
-        request.get_header_value(
-            "Authorization"
-        );
-
-
-    if (
-        authHeader.rfind(
-            "Bearer ",
-            0
-        ) != 0
-        ||
-        !isValidAuthToken(
-            authHeader.substr(7)
-        )
-    )
-    {
-        response.status = 401;
-
-        response.set_content(
-            R"({"status":"error","message":"Authentication required"})",
-            "application/json"
-        );
-
-        return false;
-    }
-
-
-    return true;
-}
-
-
-// ==========================================================
-// IMAGE EXTENSION VALIDATION
-// ==========================================================
-
-bool isAllowedImageExtension(
-    const std::string& extension
-)
-{
-    std::string ext =
-        extension;
-
-
-    std::transform(
-        ext.begin(),
-        ext.end(),
-        ext.begin(),
-        [](unsigned char c)
-        {
-            return static_cast<char>(
-                std::tolower(c)
-            );
-        }
-    );
-
-
-    return
-        ext == ".jpg" ||
-        ext == ".jpeg" ||
-        ext == ".png" ||
-        ext == ".webp";
-}
-
-
-// ==========================================================
-// PROJECT ROUTES
+// GET /api/projects
 // ==========================================================
 
 void setupProjectRoutes(
@@ -167,8 +65,7 @@ void setupProjectRoutes(
 {
 
     // ======================================================
-    // GET /api/projects
-    // PUBLIC
+    // GET PROJECTS
     // ======================================================
 
     server.Get(
@@ -178,9 +75,20 @@ void setupProjectRoutes(
             httplib::Response& response
         )
         {
-
             sqlite3* db =
                 database.getConnection();
+
+            if (db == nullptr)
+            {
+                response.status = 500;
+
+                response.set_content(
+                    R"({"status":"error","message":"Database connection failed"})",
+                    "application/json"
+                );
+
+                return;
+            }
 
 
             const char* sql =
@@ -213,7 +121,7 @@ void setupProjectRoutes(
                 response.status = 500;
 
                 response.set_content(
-                    R"({"status":"error","message":"Database query failed"})",
+                    R"({"status":"error","message":"Failed to read projects"})",
                     "application/json"
                 );
 
@@ -221,12 +129,11 @@ void setupProjectRoutes(
             }
 
 
-            std::string json =
-                "[";
+            std::ostringstream json;
 
+            json << "[";
 
-            bool first =
-                true;
+            bool first = true;
 
 
             while (
@@ -236,16 +143,12 @@ void setupProjectRoutes(
             {
 
                 if (!first)
-                    json += ",";
+                {
+                    json << ",";
+                }
 
+                first = false;
 
-                first =
-                    false;
-
-
-                // ------------------------------------------
-                // ID
-                // ------------------------------------------
 
                 int id =
                     sqlite3_column_int(
@@ -253,10 +156,6 @@ void setupProjectRoutes(
                         0
                     );
 
-
-                // ------------------------------------------
-                // NAME
-                // ------------------------------------------
 
                 const char* name =
                     reinterpret_cast<const char*>(
@@ -267,10 +166,6 @@ void setupProjectRoutes(
                     );
 
 
-                // ------------------------------------------
-                // DESCRIPTION
-                // ------------------------------------------
-
                 const char* description =
                     reinterpret_cast<const char*>(
                         sqlite3_column_text(
@@ -280,11 +175,7 @@ void setupProjectRoutes(
                     );
 
 
-                // ------------------------------------------
-                // GITHUB
-                // ------------------------------------------
-
-                const char* github =
+                const char* githubUrl =
                     reinterpret_cast<const char*>(
                         sqlite3_column_text(
                             statement,
@@ -292,10 +183,6 @@ void setupProjectRoutes(
                         )
                     );
 
-
-                // ------------------------------------------
-                // TECHNOLOGIES
-                // ------------------------------------------
 
                 const char* technologies =
                     reinterpret_cast<const char*>(
@@ -306,10 +193,6 @@ void setupProjectRoutes(
                     );
 
 
-                // ------------------------------------------
-                // IMAGE PATH
-                // ------------------------------------------
-
                 const char* imagePath =
                     reinterpret_cast<const char*>(
                         sqlite3_column_text(
@@ -319,11 +202,7 @@ void setupProjectRoutes(
                     );
 
 
-                // ------------------------------------------
-                // CREATED DATE
-                // ------------------------------------------
-
-                const char* created =
+                const char* createdAt =
                     reinterpret_cast<const char*>(
                         sqlite3_column_text(
                             statement,
@@ -332,86 +211,75 @@ void setupProjectRoutes(
                     );
 
 
-                // ------------------------------------------
-                // JSON
-                // ------------------------------------------
+                json
+                    << "{"
 
-                json += "{";
+                    << "\"id\":"
+                    << id
 
+                    << ","
 
-                json +=
-                    "\"id\":" +
-                    std::to_string(id) +
-                    ",";
+                    << "\"name\":\""
+                    << jsonEscape(
+                        name ? name : ""
+                    )
+                    << "\""
 
+                    << ","
 
-                json +=
-                    "\"name\":\"" +
-                    escapeJson(
-                        name
-                            ? name
-                            : ""
-                    ) +
-                    "\",";
-
-
-                json +=
-                    "\"description\":\"" +
-                    escapeJson(
+                    << "\"description\":\""
+                    << jsonEscape(
                         description
                             ? description
                             : ""
-                    ) +
-                    "\",";
+                    )
+                    << "\""
 
+                    << ","
 
-                json +=
-                    "\"github_url\":\"" +
-                    escapeJson(
-                        github
-                            ? github
+                    << "\"github_url\":\""
+                    << jsonEscape(
+                        githubUrl
+                            ? githubUrl
                             : ""
-                    ) +
-                    "\",";
+                    )
+                    << "\""
 
+                    << ","
 
-                json +=
-                    "\"technologies\":\"" +
-                    escapeJson(
+                    << "\"technologies\":\""
+                    << jsonEscape(
                         technologies
                             ? technologies
                             : ""
-                    ) +
-                    "\",";
+                    )
+                    << "\""
 
+                    << ","
 
-                json +=
-                    "\"image_path\":\"" +
-                    escapeJson(
+                    << "\"image_path\":\""
+                    << jsonEscape(
                         imagePath
                             ? imagePath
                             : ""
-                    ) +
-                    "\",";
+                    )
+                    << "\""
 
+                    << ","
 
-                json +=
-                    "\"created_at\":\"" +
-                    escapeJson(
-                        created
-                            ? created
+                    << "\"created_at\":\""
+                    << jsonEscape(
+                        createdAt
+                            ? createdAt
                             : ""
-                    ) +
-                    "\"";
+                    )
+                    << "\""
 
-
-                json +=
-                    "}";
+                    << "}";
             }
 
 
-            json +=
-                "]";
+            json << "]";
 
 
             sqlite3_finalize(
@@ -420,10 +288,9 @@ void setupProjectRoutes(
 
 
             response.set_content(
-                json,
+                json.str(),
                 "application/json"
             );
-
         }
     );
 
@@ -433,14 +300,8 @@ void setupProjectRoutes(
     //
     // AUTHENTICATED
     //
-    // multipart/form-data
-    //
-    // Fields:
-    // name
-    // description
-    // github_url
-    // technologies
-    // image
+    // The frontend uploads the image directly to Cloudinary.
+    // It then sends the returned Cloudinary URL here.
     // ======================================================
 
     server.Post(
@@ -451,55 +312,90 @@ void setupProjectRoutes(
         )
         {
 
-            // ----------------------------------------------
+            // ==================================================
             // AUTHENTICATION
-            // ----------------------------------------------
+            // ==================================================
+
+            std::string token;
+
 
             if (
-                !checkProjectAuthentication(
-                    request,
-                    response
+                request.has_header(
+                    "Authorization"
                 )
             )
             {
+
+                const std::string header =
+                    request.get_header_value(
+                        "Authorization"
+                    );
+
+
+                const std::string prefix =
+                    "Bearer ";
+
+
+                if (
+                    header.rfind(
+                        prefix,
+                        0
+                    ) == 0
+                )
+                {
+
+                    token =
+                        header.substr(
+                            prefix.length()
+                        );
+                }
+            }
+
+
+            if (token.empty())
+            {
+                response.status = 401;
+
+                response.set_content(
+                    R"({"status":"error","message":"Authentication required"})",
+                    "application/json"
+                );
+
                 return;
             }
 
 
-            // ----------------------------------------------
-            // FORM VALUES
-            // ----------------------------------------------
+            // ==================================================
+            // VALIDATE TOKEN
+            // ==================================================
 
-            std::string name =
-                request.form.get_field(
-                    "name"
+            if (
+                !isValidAuthToken(
+                    token
+                )
+            )
+            {
+                response.status = 401;
+
+                response.set_content(
+                    R"({"status":"error","message":"Invalid or expired token"})",
+                    "application/json"
                 );
 
-
-            std::string description =
-                request.form.get_field(
-                    "description"
-                );
+                return;
+            }
 
 
-            std::string githubUrl =
-                request.form.get_field(
-                    "github_url"
-                );
+            // ==================================================
+            // READ FORM PARAMETERS
+            // ==================================================
 
+            std::string name;
+            std::string description;
+            std::string githubUrl;
+            std::string technologies;
+            std::string imageUrl;
 
-            std::string technologies =
-                request.form.get_field(
-                    "technologies"
-                );
-
-
-            std::string imagePath;
-
-
-            // ----------------------------------------------
-            // SUPPORT NORMAL FORM PARAMETERS TOO
-            // ----------------------------------------------
 
             if (
                 request.has_param(
@@ -553,211 +449,33 @@ void setupProjectRoutes(
             }
 
 
-            // ----------------------------------------------
-            // VALIDATION
-            // ----------------------------------------------
-
             if (
-                name.empty() ||
-                description.empty()
+                request.has_param(
+                    "image_url"
+                )
             )
             {
-                response.status = 400;
-
-                response.set_content(
-                    R"({"status":"error","message":"Name and description are required"})",
-                    "application/json"
-                );
-
-                return;
+                imageUrl =
+                    request.get_param_value(
+                        "image_url"
+                    );
             }
 
 
             // ==================================================
-            // IMAGE UPLOAD
+            // VALIDATE PROJECT NAME
             // ==================================================
 
-            if (
-                request.is_multipart_form_data()
-            )
+            if (name.empty())
             {
+                response.status = 400;
 
-                if (
-                    request.form.has_file(
-                        "image"
-                    )
-                )
-                {
+                response.set_content(
+                    R"({"status":"error","message":"Project name is required"})",
+                    "application/json"
+                );
 
-                    const auto& image =
-                        request.form.get_file(
-                            "image"
-                        );
-
-
-                    // ------------------------------------------
-                    // GET EXTENSION
-                    // ------------------------------------------
-
-                    std::string extension =
-                        fs::path(
-                            image.filename
-                        ).extension().string();
-
-
-                    // ------------------------------------------
-                    // VALIDATE EXTENSION
-                    // ------------------------------------------
-
-                    if (
-                        !isAllowedImageExtension(
-                            extension
-                        )
-                    )
-                    {
-                        response.status = 400;
-
-                        response.set_content(
-                            R"({"status":"error","message":"Only JPG, JPEG, PNG and WEBP images are allowed"})",
-                            "application/json"
-                        );
-
-                        return;
-                    }
-
-
-                    // ------------------------------------------
-                    // CREATE UPLOAD DIRECTORY
-                    // ------------------------------------------
-
-                    fs::path uploadDirectory =
-                        PROJECT_UPLOAD_DIRECTORY;
-
-
-                    std::error_code directoryError;
-
-
-                    fs::create_directories(
-                        uploadDirectory,
-                        directoryError
-                    );
-
-
-                    if (
-                        directoryError
-                    )
-                    {
-                        std::cerr
-                            << "Upload directory error: "
-                            << directoryError.message()
-                            << std::endl;
-
-
-                        response.status = 500;
-
-                        response.set_content(
-                            R"({"status":"error","message":"Unable to create project upload directory"})",
-                            "application/json"
-                        );
-
-                        return;
-                    }
-
-
-                    // ------------------------------------------
-                    // UNIQUE FILE NAME
-                    // ------------------------------------------
-
-                    std::string filename =
-                        "project_" +
-                        std::to_string(
-                            std::time(
-                                nullptr
-                            )
-                        ) +
-                        extension;
-
-
-                    fs::path outputPath =
-                        uploadDirectory /
-                        filename;
-
-
-                    // ------------------------------------------
-                    // SAVE IMAGE
-                    // ------------------------------------------
-
-                    std::ofstream outputFile(
-                        outputPath,
-                        std::ios::binary
-                    );
-
-
-                    if (!outputFile)
-                    {
-                        response.status = 500;
-
-                        response.set_content(
-                            R"({"status":"error","message":"Unable to save project image"})",
-                            "application/json"
-                        );
-
-                        return;
-                    }
-
-
-                    outputFile.write(
-                        image.content.data(),
-                        static_cast<std::streamsize>(
-                            image.content.size()
-                        )
-                    );
-
-
-                    outputFile.close();
-
-
-                    if (!outputFile)
-                    {
-                        response.status = 500;
-
-                        response.set_content(
-                            R"({"status":"error","message":"Failed while saving project image"})",
-                            "application/json"
-                        );
-
-                        return;
-                    }
-
-
-                    // ------------------------------------------
-                    // DATABASE PATH
-                    // ------------------------------------------
-                    //
-                    // Keep database path relative.
-                    //
-                    // Example:
-                    //
-                    // uploads/projects/project_123.jpg
-                    //
-                    // ------------------------------------------
-
-                    imagePath =
-                        (
-                            fs::path(
-                                "uploads"
-                            ) /
-                            "projects" /
-                            filename
-                        ).generic_string();
-
-
-                    std::cout
-                        << "Project image saved: "
-                        << outputPath
-                        << std::endl;
-
-                }
+                return;
             }
 
 
@@ -769,10 +487,26 @@ void setupProjectRoutes(
                 database.getConnection();
 
 
+            if (db == nullptr)
+            {
+                response.status = 500;
+
+                response.set_content(
+                    R"({"status":"error","message":"Database connection failed"})",
+                    "application/json"
+                );
+
+                return;
+            }
+
+
+            // ==================================================
+            // INSERT PROJECT
+            // ==================================================
+
             const char* sql =
                 "INSERT INTO projects "
-                "(name, description, github_url, "
-                "technologies, image_path) "
+                "(name, description, github_url, technologies, image_path) "
                 "VALUES (?, ?, ?, ?, ?);";
 
 
@@ -793,17 +527,13 @@ void setupProjectRoutes(
                 response.status = 500;
 
                 response.set_content(
-                    R"({"status":"error","message":"Failed to prepare database query"})",
+                    R"({"status":"error","message":"Failed to prepare project insert"})",
                     "application/json"
                 );
 
                 return;
             }
 
-
-            // ----------------------------------------------
-            // BIND NAME
-            // ----------------------------------------------
 
             sqlite3_bind_text(
                 statement,
@@ -814,10 +544,6 @@ void setupProjectRoutes(
             );
 
 
-            // ----------------------------------------------
-            // BIND DESCRIPTION
-            // ----------------------------------------------
-
             sqlite3_bind_text(
                 statement,
                 2,
@@ -826,10 +552,6 @@ void setupProjectRoutes(
                 SQLITE_TRANSIENT
             );
 
-
-            // ----------------------------------------------
-            // BIND GITHUB
-            // ----------------------------------------------
 
             sqlite3_bind_text(
                 statement,
@@ -840,10 +562,6 @@ void setupProjectRoutes(
             );
 
 
-            // ----------------------------------------------
-            // BIND TECHNOLOGIES
-            // ----------------------------------------------
-
             sqlite3_bind_text(
                 statement,
                 4,
@@ -853,27 +571,18 @@ void setupProjectRoutes(
             );
 
 
-            // ----------------------------------------------
-            // BIND IMAGE PATH
-            // ----------------------------------------------
-
             sqlite3_bind_text(
                 statement,
                 5,
-                imagePath.c_str(),
+                imageUrl.c_str(),
                 -1,
                 SQLITE_TRANSIENT
             );
 
 
-            // ----------------------------------------------
-            // INSERT
-            // ----------------------------------------------
-
             if (
-                sqlite3_step(
-                    statement
-                ) != SQLITE_DONE
+                sqlite3_step(statement)
+                != SQLITE_DONE
             )
             {
 
@@ -881,10 +590,11 @@ void setupProjectRoutes(
                     statement
                 );
 
+
                 response.status = 500;
 
                 response.set_content(
-                    R"({"status":"error","message":"Failed to insert project"})",
+                    R"({"status":"error","message":"Failed to add project"})",
                     "application/json"
                 );
 
@@ -905,21 +615,26 @@ void setupProjectRoutes(
             );
 
 
-            // ----------------------------------------------
+            // ==================================================
             // SUCCESS
-            // ----------------------------------------------
+            // ==================================================
+
+            std::ostringstream json;
+
+
+            json
+                << "{"
+                << "\"status\":\"success\","
+                << "\"message\":\"Project added successfully\","
+                << "\"id\":"
+                << projectId
+                << "}";
+
 
             response.set_content(
-                "{\"status\":\"success\","
-                "\"message\":\"Project added successfully\","
-                "\"id\":" +
-                std::to_string(
-                    projectId
-                ) +
-                "}",
+                json.str(),
                 "application/json"
             );
-
         }
     );
 
@@ -938,104 +653,114 @@ void setupProjectRoutes(
         )
         {
 
-            // ----------------------------------------------
+            // ==================================================
             // AUTHENTICATION
-            // ----------------------------------------------
+            // ==================================================
+
+            std::string token;
+
 
             if (
-                !checkProjectAuthentication(
-                    request,
-                    response
+                request.has_header(
+                    "Authorization"
                 )
             )
             {
+
+                const std::string header =
+                    request.get_header_value(
+                        "Authorization"
+                    );
+
+
+                const std::string prefix =
+                    "Bearer ";
+
+
+                if (
+                    header.rfind(
+                        prefix,
+                        0
+                    ) == 0
+                )
+                {
+
+                    token =
+                        header.substr(
+                            prefix.length()
+                        );
+                }
+            }
+
+
+            if (token.empty())
+            {
+                response.status = 401;
+
+                response.set_content(
+                    R"({"status":"error","message":"Authentication required"})",
+                    "application/json"
+                );
+
                 return;
             }
 
 
-            // ----------------------------------------------
-            // PROJECT ID
-            // ----------------------------------------------
+            // ==================================================
+            // VALIDATE TOKEN
+            // ==================================================
 
-            int id =
-                std::stoi(
-                    request.matches[1].str()
+            if (
+                !isValidAuthToken(
+                    token
+                )
+            )
+            {
+                response.status = 401;
+
+                response.set_content(
+                    R"({"status":"error","message":"Invalid or expired token"})",
+                    "application/json"
                 );
 
+                return;
+            }
+
+
+            // ==================================================
+            // PROJECT ID
+            // ==================================================
+
+            int projectId =
+                std::stoi(
+                    request.matches[1]
+                );
+
+
+            // ==================================================
+            // DATABASE
+            // ==================================================
 
             sqlite3* db =
                 database.getConnection();
 
 
-            // ----------------------------------------------
-            // GET IMAGE PATH BEFORE DELETE
-            // ----------------------------------------------
-
-            std::string imagePath;
-
-
-            const char* selectSql =
-                "SELECT image_path "
-                "FROM projects "
-                "WHERE id = ?;";
-
-
-            sqlite3_stmt* selectStatement =
-                nullptr;
-
-
-            if (
-                sqlite3_prepare_v2(
-                    db,
-                    selectSql,
-                    -1,
-                    &selectStatement,
-                    nullptr
-                ) == SQLITE_OK
-            )
+            if (db == nullptr)
             {
+                response.status = 500;
 
-                sqlite3_bind_int(
-                    selectStatement,
-                    1,
-                    id
+                response.set_content(
+                    R"({"status":"error","message":"Database connection failed"})",
+                    "application/json"
                 );
 
-
-                if (
-                    sqlite3_step(
-                        selectStatement
-                    ) == SQLITE_ROW
-                )
-                {
-
-                    const char* path =
-                        reinterpret_cast<const char*>(
-                            sqlite3_column_text(
-                                selectStatement,
-                                0
-                            )
-                        );
-
-
-                    if (path)
-                    {
-                        imagePath =
-                            path;
-                    }
-
-                }
-
-
-                sqlite3_finalize(
-                    selectStatement
-                );
+                return;
             }
 
 
-            // ----------------------------------------------
-            // DELETE DATABASE RECORD
-            // ----------------------------------------------
+            // ==================================================
+            // DELETE PROJECT
+            // ==================================================
 
             const char* sql =
                 "DELETE FROM projects "
@@ -1056,10 +781,11 @@ void setupProjectRoutes(
                 ) != SQLITE_OK
             )
             {
+
                 response.status = 500;
 
                 response.set_content(
-                    R"({"status":"error","message":"Database query failed"})",
+                    R"({"status":"error","message":"Failed to prepare delete"})",
                     "application/json"
                 );
 
@@ -1070,14 +796,13 @@ void setupProjectRoutes(
             sqlite3_bind_int(
                 statement,
                 1,
-                id
+                projectId
             );
 
 
             if (
-                sqlite3_step(
-                    statement
-                ) != SQLITE_DONE
+                sqlite3_step(statement)
+                != SQLITE_DONE
             )
             {
 
@@ -1085,10 +810,11 @@ void setupProjectRoutes(
                     statement
                 );
 
+
                 response.status = 500;
 
                 response.set_content(
-                    R"({"status":"error","message":"Delete failed"})",
+                    R"({"status":"error","message":"Failed to delete project"})",
                     "application/json"
                 );
 
@@ -1107,11 +833,8 @@ void setupProjectRoutes(
             );
 
 
-            if (
-                deleted == 0
-            )
+            if (deleted == 0)
             {
-
                 response.status = 404;
 
                 response.set_content(
@@ -1123,61 +846,10 @@ void setupProjectRoutes(
             }
 
 
-            // ----------------------------------------------
-            // DELETE IMAGE FILE
-            // ----------------------------------------------
-
-            if (
-                !imagePath.empty()
-            )
-            {
-
-                std::error_code fileError;
-
-
-                // Database stores:
-                //
-                // uploads/projects/file.jpg
-                //
-                // Convert that relative database
-                // path to the real filesystem path.
-
-                fs::path imageFilePath =
-                    fs::path(
-                        "C:/Portfolio/backend"
-                    ) /
-                    fs::path(
-                        imagePath
-                    );
-
-
-                fs::remove(
-                    imageFilePath,
-                    fileError
-                );
-
-
-                if (fileError)
-                {
-                    std::cerr
-                        << "Image delete warning: "
-                        << fileError.message()
-                        << std::endl;
-                }
-
-            }
-
-
-            // ----------------------------------------------
-            // SUCCESS
-            // ----------------------------------------------
-
             response.set_content(
                 R"({"status":"success","message":"Project deleted successfully"})",
                 "application/json"
             );
-
         }
     );
-
 }
