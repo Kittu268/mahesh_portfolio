@@ -13,6 +13,8 @@ let authToken = localStorage.getItem("portfolio_admin_token") || null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    console.log("Admin page loaded.");
+
     // Login form
     const loginForm = document.getElementById("login-form");
 
@@ -67,6 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Check existing login
     if (authToken) {
         showDashboard();
+    } else {
+        showLogin();
     }
 });
 
@@ -315,22 +319,19 @@ function logout() {
         document.getElementById("login-section");
 
     if (dashboard) {
-        dashboard.style.display = "none";
+        dashboard.hidden = true;
     }
 
     if (loginSection) {
-        loginSection.style.display = "block";
+        loginSection.hidden = false;
     }
 
     console.log("Logged out.");
 }
 
+function showLogin() {
 
-// ============================================================
-// SHOW DASHBOARD
-// ============================================================
-
-function showDashboard() {
+    console.log("Showing login page.");
 
     const loginSection =
         document.getElementById("login-section");
@@ -339,17 +340,38 @@ function showDashboard() {
         document.getElementById("dashboard-section");
 
     if (loginSection) {
-        loginSection.style.display = "none";
+        loginSection.hidden = false;
     }
 
     if (dashboardSection) {
-        dashboardSection.style.display = "block";
+        dashboardSection.hidden = true;
+    }
+}
+// ============================================================
+// SHOW DASHBOARD
+// ============================================================
+
+function showDashboard() {
+
+    console.log("Admin dashboard opened.");
+
+    const loginSection =
+        document.getElementById("login-section");
+
+    const dashboardSection =
+        document.getElementById("dashboard-section");
+
+    if (loginSection) {
+        loginSection.hidden = true;
+    }
+
+    if (dashboardSection) {
+        dashboardSection.hidden = false;
     }
 
     loadProjects();
     loadCertificates();
 }
-
 
 // ============================================================
 // AUTHENTICATION HEADERS
@@ -392,7 +414,12 @@ async function loadProjects() {
 
         const response =
             await fetch(
-                `${API_URL}/projects`
+                `${API_URL}/projects`,
+                {
+                    headers: {
+                        ...getAuthHeaders()
+                    }
+                }
             );
 
         console.log(
@@ -869,7 +896,12 @@ async function loadCertificates() {
 
         const response =
             await fetch(
-                `${API_URL}/certificates`
+                `${API_URL}/certificates`,
+                {
+                    headers: {
+                        ...getAuthHeaders()
+                    }
+                }
             );
 
         const data =
